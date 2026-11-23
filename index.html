@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulsar Expo</title>
+<meta name="description" content="An interactive pulsar exhibit: dedisperse, fold, clean and listen to radio pulsar data in your browser.">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/rack.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <radialGradient id="gBake" cx="40%" cy="25%" r="85%"><stop offset="0" stop-color="#6b5845"/><stop offset=".55" stop-color="#2c2219"/><stop offset="1" stop-color="#110d0a"/></radialGradient>
+  <linearGradient id="gBakeHi" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <radialGradient id="gNut" cx="38%" cy="32%" r="72%"><stop offset="0" stop-color="#f0f0ea"/><stop offset=".6" stop-color="#9a9d97"/><stop offset="1" stop-color="#565953"/></radialGradient>
+  <linearGradient id="gLever" x1="0" x2="1"><stop offset="0" stop-color="#83867f"/><stop offset=".45" stop-color="#f6f6f0"/><stop offset="1" stop-color="#70736c"/></linearGradient>
+  <radialGradient id="gPlug" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#f19a5c"/><stop offset=".6" stop-color="#c2531c"/><stop offset="1" stop-color="#6e2b0b"/></radialGradient>
+  <radialGradient id="gPlate" cx="45%" cy="35%" r="75%"><stop offset="0" stop-color="#5d6866"/><stop offset=".7" stop-color="#2e3635"/><stop offset="1" stop-color="#1c2221"/></radialGradient>
+  <filter id="fSh" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.2"/></filter>
+</defs></svg>
+
+<div class="wrap">
+<div class="rack" id="rack">
+
+  <!-- ═══ display ═══ -->
+  <section class="unit uDisp" data-seed="1">
+    <div class="dl">
+      <div class="idrow">
+        <div class="nameplate">Receiver</div>
+        <div style="min-width:0"><h1 id="psr-name">Pulsar Expo</h1><div class="sub" id="psr-sub">Load some telescope data to begin</div></div>
+        <dl class="facts" id="facts"></dl>
+      </div>
+      <div class="glass tube scr" id="scr">
+        <div class="mainwrap"><canvas data-main></canvas><div class="playhead" id="playhead"></div></div>
+        <canvas data-series></canvas>
+        <div class="osd tl" data-read="osd1"></div><div class="osd tr" data-read="osd2"></div><div class="osd bl" data-read="osd3"></div><div class="osd br" data-read="osd4"></div>
+        <div class="busy" id="busy"></div>
+        <div class="splash" id="splash">
+          <h2>No pulsar data yet</h2>
+          <p id="splash-msg">Load the Filterbanks folder to open every .fil file in it, or pick files. You can also drop .fil files anywhere on the rack.</p>
+          <div class="keys"><button class="key" data-act="demos" id="splash-demos" hidden>Example pulsars</button><button class="key" data-act="folder" id="splash-folder">Open Filterbanks folder</button><button class="key dark" data-act="files">Pick files…</button></div>
+        </div>
+      </div>
+      <div class="timerow">
+        <div class="c" data-p="pos" data-type="fader-h"></div>
+        <div class="c" data-p="win" data-type="knob" data-size="44"></div>
+        <button class="key dark" data-act="enlarge" title="Fill the screen with the data (F)"><span class="lamp"></span>Enlarge</button>
+        <div class="modesw"><div class="c" data-p="vintage" data-type="toggle" data-on="Vintage" data-off="Plain"></div><div class="lbl">Flip down for plain data and controls</div></div>
+      </div>
+    </div>
+    <div class="dr">
+      <div><div class="print" style="margin-bottom:12px">Pulsar</div><div class="psr" id="psr-keys"></div></div>
+      <div><div class="print" style="margin-bottom:12px">Story</div><div class="keys2" id="scenes"></div></div>
+      <div><div class="print" style="margin-bottom:12px">View</div><div class="keys3">
+        <button class="key" data-act="kind:waterfall">Waterfall</button><button class="key" data-act="kind:pulsestack">Pulse stack</button><button class="key" data-act="kind:profile">Average</button></div></div>
+      <div class="capbox" id="caption"></div>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+
+  <!-- ═══ processing ═══ -->
+  <div class="row2">
+    <section class="unit low uDM" data-stage="bypassDM" data-seed="2">
+      <div class="nameplate">Dedisperser <small>tune in the pulsar</small></div>
+      <div class="c" data-p="bypassDM" data-type="patch" data-plain="Use the dedisperser"></div>
+      <div class="c" data-p="dm" data-type="knob" data-size="126" data-ticks="31"></div>
+      <div class="col"><button class="key" data-act="dm0"><span class="lamp"></span>DM 0</button><button class="key" data-act="dmtrue"><span class="lamp"></span>True DM</button><button class="key dark" data-act="sweep" id="sweep-key">Sweep</button></div>
+      <div class="mini" style="grid-template-rows:auto auto 1fr">
+        <div class="snrm"><div class="num" data-read="snr"></div><div class="lbl">Pulse signal strength</div><div class="bars" data-read="bars"></div></div>
+        <div class="cap2"><span>Signal strength against DM</span><b data-read="peak"></b></div>
+        <div class="glass"><canvas data-tune></canvas></div>
+      </div>
+    </section>
+    <section class="unit low uINT" data-stage="bypassInt" data-seed="3">
+      <div class="nameplate">Integrator <small>add samples together</small></div>
+      <div class="c" data-p="bypassInt" data-type="patch" data-plain="Use the integrator"></div>
+      <div class="c" data-p="tsc" data-type="rotary" data-size="92"></div>
+      <div class="c" data-p="fsc" data-type="rotary" data-size="92"></div>
+      <div class="mini"><div class="cap2"><span>One flash, close up</span><b data-read="res"></b></div>
+        <div class="glass"><canvas data-zoom></canvas></div></div>
+    </section>
+  </div>
+  <div class="row2">
+    <section class="unit low uRFI" data-stage="bypassRFI" data-seed="4">
+      <div class="nameplate">Interference filter <small>switch off noisy channels</small></div>
+      <div class="c" data-p="bypassRFI" data-type="patch" data-plain="Use the filter"></div>
+      <div class="mini"><div class="cap2"><span>Noise in every channel. Click a spike to switch it off.</span><b data-read="zapcount"></b></div>
+        <div class="glass"><canvas data-strip style="cursor:pointer"></canvas><div class="osd" style="font-size:19px;left:8px;bottom:4px" data-read="flo"></div><div class="osd" style="font-size:19px;right:8px;bottom:4px" data-read="fhi"></div></div></div>
+      <div class="keys2"><button class="key" data-act="auto">Auto zap</button><button class="key" data-act="clear">Clear all</button><button class="key dark" data-act="undo">Undo</button><button class="key dark" data-act="redo">Redo</button></div>
+      <div class="c" data-p="sig" data-type="knob" data-size="60"></div>
+    </section>
+    <section class="unit low uAUD" data-seed="5">
+      <div class="nameplate">Audio <small data-read="modedesc"></small></div>
+      <div class="c" data-p="mode" data-type="rotary" data-size="88"></div>
+      <div class="col" style="justify-items:center"><button class="key red" data-act="play" style="height:62px;width:122px;font-size:22px"><span class="lamp"></span>Play</button>
+        <div class="c" data-p="loop" data-type="toggle" data-on="Loop" data-off="Once"></div></div>
+      <div class="c" data-p="spd" data-type="knob" data-size="64"></div>
+      <div class="c" data-p="vol" data-type="fader-v" style="height:150px"></div>
+      <div class="mini"><div class="cap2"><span>Output</span><b data-read="audinfo"></b></div><div class="glass"><canvas data-vu></canvas></div></div>
+    </section>
+  </div>
+  <div></div>
+
+  <!-- ═══ detailed controls ═══ -->
+  <section class="drawer" id="drawer">
+    <button class="handle" data-act="drawer"><span class="grip"></span><span data-read="drawerlabel"></span><span class="grip"></span></button>
+    <div class="inner">
+      <div class="subp"><div class="nameplate">Folding</div>
+        <div class="row"><div><div class="lbl" style="text-align:left">Period</div><div class="glass readout" style="width:210px" data-read="period"></div><div class="lbl" style="text-align:left;margin-top:6px" data-read="periodsrc"></div></div>
+          <div class="col" style="gap:16px"><button class="key dark" data-act="findperiod">Find period</button><button class="key dark" data-act="centre">Centre the pulse</button></div></div>
+        <div class="row"><div class="c" data-p="nb" data-type="rotary" data-size="74"></div><div class="c" data-p="shift" data-type="knob" data-size="62"></div><div class="c" data-p="ppr" data-type="rotary" data-size="74"></div></div>
+      </div>
+      <div class="subp"><div class="nameplate">Display</div>
+        <div class="row"><div class="c" data-p="cmap" data-type="rotary" data-size="80"></div>
+          <div class="c" data-p="con" data-type="fader-v" style="height:226px"></div><div class="c" data-p="floor" data-type="fader-v" style="height:226px"></div>
+          <div class="col" style="gap:14px"><div class="c" data-p="grat" data-type="toggle" data-on="Grid" data-off="No grid"></div><div class="c" data-p="smooth" data-type="toggle" data-on="Smooth" data-off="Blocky"></div></div>
+          <div class="col" style="gap:14px"><div class="c" data-p="curve" data-type="toggle" data-on="Curve" data-off="No curve"></div><div class="c" data-p="aspect" data-type="rotary" data-size="64"></div></div></div>
+      </div>
+      <div class="subp"><div class="nameplate">Data</div>
+        <div class="row"><div class="c" data-p="bandpass" data-type="toggle" data-on="Bandpass" data-off="Raw"></div><div class="c" data-p="secstart" data-type="knob" data-size="62"></div><div class="c" data-p="seclen" data-type="knob" data-size="62"></div></div>
+        <div class="row"><div class="c" data-p="res" data-type="rotary" data-size="70"></div>
+          <div class="col" style="gap:16px"><button class="key dark" data-act="loadsection">Load section</button><button class="key dark" data-act="files">Add files…</button><button class="key dark" data-act="folder">Folder…</button></div></div>
+      </div>
+      <div class="subp"><div class="nameplate">Sound detail</div>
+        <div class="row"><div class="c" data-p="flo" data-type="knob" data-size="62"></div><div class="c" data-p="fhi" data-type="knob" data-size="62"></div></div>
+        <div class="row"><div class="c" data-p="voices" data-type="rotary" data-size="70"></div><button class="key dark" data-act="wav" style="align-self:center">Save WAV</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ enlarged screen ═══ -->
+  <div class="bigview" id="bigview">
+    <div class="bigslot" id="bigslot" style="display:grid;min-height:0"></div>
+    <div class="bar"><div class="snrm"><div class="num" data-read="snr"></div><div class="lbl">Pulse signal strength</div><div class="bars" data-read="bars"></div></div>
+      <div class="status" data-read="osd1" style="font-size:30px"></div><span class="sp"></span>
+      <button class="key dark" data-act="enlarge"><span class="lamp"></span>Back to the rack</button></div>
+  </div>
+  <div class="dropzone">Drop .fil files to load them</div>
+</div>
+</div>
+
+<input type="file" id="file-in" accept=".fil" multiple hidden>
+<script src="js/colormaps.js"></script>
+<script src="js/pulsars.js"></script>
+<script src="js/dsp_core.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/app_core.js"></script>
+<script src="js/demos.js"></script>
+<script src="js/rack_controls.js"></script>
+<script src="js/expo.js"></script>
+</body>
+</html>
