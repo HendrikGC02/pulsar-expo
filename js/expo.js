@@ -510,8 +510,12 @@
     let pickFirst = !app.datasets.length, chain = Promise.resolve();
     await Promise.all(todo.map(d => PW.demos.fetch(d, x => { got[d.file] = x * d.mb; upd(); })
       .then(f => (chain = chain.then(async () => {
+        // openFile switches to the new file: stay on the pulsar already on screen
+        // (the first example to arrive, or one the presenter chose meanwhile)
+        const keep = pickFirst ? null : app.ds && app.ds.id;
         const nd = await app.openFile(f);
-        if (pickFirst) { pickFirst = false; await app.select(nd.id, true); applyScene(UI.scene || 0); }
+        pickFirst = false;
+        await app.select(keep || nd.id, true); applyScene(UI.scene || 0);
       })))
       .catch(e => { console.error(e); status(e.message || String(e), 'error'); })));
     demoBusy = false;
